@@ -25,6 +25,8 @@ import urllib
 import urllib2
 import logging
 
+# This if statemetn is only really used internally or if you're using it in a 
+# django environment. Most likely, you can delete or ignore.
 if not os.environ.get("DJANGO_SETTINGS_MODULE"):
 	ROOT_PATH = os.path.dirname(__file__)
 	sys.path.append(ROOT_PATH)
@@ -32,6 +34,7 @@ if not os.environ.get("DJANGO_SETTINGS_MODULE"):
 	sys.path.append(os.path.join(ROOT_PATH, '../libs/'))
 	os.environ["DJANGO_SETTINGS_MODULE"] = "settings"
 
+# The following two imports are necessary to use the Docket Alarm API
 import api
 import api.client
 
@@ -44,6 +47,10 @@ pp = pprint.PrettyPrinter(indent=4)
 
 # You can specify your credentials here rather than at the command prompt.
 username, password = None, None
+
+##################################
+# API Client Options
+# Set to True to just test. This will return fake data, but costs nothing.
 api.client.TESTING = False
 # Wait for input before making url fetch
 api.client.PRESS_KEY_BEFORE_CALL = True
