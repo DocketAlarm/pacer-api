@@ -15,8 +15,8 @@ access to United States courts:
 
 Docket Alarm provides access to all of the documents in its database through an 
 API. At the moment, the only courts currently officially supported are the 
-first three items above (Federal District, Appellate, and Bankruptcy courts).  
-To access others, please contact us at admin@docketalarm.com.
+first three items above (Federal District, Appellate, and Bankruptcy courts). To
+ access others, please contact us at admin@docketalarm.com.
 
 The [supported courts use PACER](https://www.docketalarm.com/blog/2014/6/2/The-New-Resource-for-All-Things-PACER/), 
 so you may consider Docket Alarm to be a PACER API.
