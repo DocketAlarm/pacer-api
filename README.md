@@ -72,3 +72,8 @@ repository:
  into Docket Alarm, search for a few documents, and download a docket.  If you
  are creating your own python program, one way to start would be to edit this
  program.
+ 
+## Help and Support
+Because Docket Alarm is a commercial SaaS product, it is fully supported. To
+get help with this python client or the Docket Alarm API in general, contact
+admin@docketalarm.com 
