@@ -3,8 +3,6 @@ docketalarm-api
 
 Python API Client for the Docket Alarm Legal Database (www.docketalarm.com)
 
-This library guides you through some of the Docket Alarm capabilities API. 
-
 ## Docket Alarm's Court Coverage
 [Docket Alarm is a legal research website](www.docketalarm.com) that provides
 access to United States courts:
@@ -50,8 +48,8 @@ After runbubg the program above, you will be greeted with a number of prompts
 to log into Docket Alarm and perform a PACER search and docket download.
 
 ## Learning More
-To learn more about the API is to take a look at the official (Docket Alarm API 
- documentation at: https://www.docketalarm.com/api/v1/)[https://www.docketalarm.com/api/v1/]
+To learn more about the API is to take a look at the official Docket Alarm API 
+ documentation at: https://www.docketalarm.com/api/v1/
 
 You can also explore the API by reviewing the code in this repository:
 
