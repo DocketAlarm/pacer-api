@@ -1,35 +1,48 @@
 docketalarm-api / pacer-api
 ===============
 
-[Docket Alarm is a legal research site](www.docketalarm.com) that provides
-access to the United States court system. This library is a Python API client 
-to access the legal filings in Docket Alarm's database.
+[Docket Alarm is a legal research system](www.docketalarm.com) that provides
+access to the United States court system. This Python API client provides 
+access to all legal filings in Docket Alarm's database across the 
+United States.
 
 ## Docket Alarm's Court Coverage
-As of Dec. 2014, Docket Alarm covers the following jurisdictions:
+As of May 2017, Docket Alarm covers the following jurisdictions:
 
-* Federal District Courts
-* Federal Appellate Level Courts (i.e., the Circuit Courts)
-* Bankruptcy Courts
+* Federal Courts / PACER cases (District Courts, Bankruptcies, Appellate, MDL)
+* U.S. Supreme Court
 * The International Trade Commission (the ITC)
 * The Patent Trial and Appeal Board (PTAB)
+* The Trademark Trial and Appeal Board (TTAB)
+* Trademark Prosecution History at the USPTO
+* Orange Book Filings and Related Correspondence with the FDA
+* State courts including California, Texas, Florida and New York.
 
-Docket Alarm provides access to all of the above courts through an API. 
-Currently however, Docket Alarm only provides public access API access to 
-courts on the PACER system, which covers Federal District, Appellate, and 
-Bankruptcy courts. To access others, contact us at admin@docketalarm.com.
+A complete list of [courts is maintained on the Docket Alarm 
+website](https://www.docketalarm.com/courts). If a court you are looking for
+is not on this list, let us know at admin@docketalarm.com, we're always adding 
+more.
 
-Because the [supported courts all use 
-PACER](https://www.docketalarm.com/blog/2014/6/2/The-New-Resource-for-All-Things-PACER/), 
-you could consider Docket Alarm to be a PACER API.
+Docket Alarm provides access to all of the above courts. Because Docket Alarm's
+API is [often used to download court cases from PACER](https://www.docketalarm.com/blog/2014/6/2/The-New-Resource-for-All-Things-PACER/), 
+Docket Alarm serves as a PACER API. Note however, that while 
+Docket Alarm does provide an API to PACER, it also provides an API to many other 
+court systems as well.
 
 ## Cost and Pricing
-This API client code is free to download and run under the Apache license. 
-However, to actually use it, you will need a Docket Alarm account, which is not
-free.  Unfortunately, the U.S. court's docketing system, PACER charges access 
-to all documents.  As a result, Docket Alarm must pass on those charges in the 
-form of user fees.
+This API client is freely licensed under the Apache license. However to use it, 
+you will need a Docket Alarm account, which is not free.  Unfortunately, the 
+U.S. court's docketing system, PACER charges access to all documents.  As a 
+result, Docket Alarm must pass on those charges in the form of user fees.
 
+### Saving Money on Court Fees
+Every time Docket Alarm downloads a document from the court, it saves a copy
+of that document. If another user then attempts to access that document, rather
+than going to the court a second time, Docket Alarm returns its saved copy.
+This allows users to reduce their court fees because we do not pay a fee for 
+the same document twice.
+
+### Test Mode
 For development purposes, Docket Alarm provides a free test mode. This test 
 mode allows you to see exactly what comes back from the API, but returns fake 
 test data.
