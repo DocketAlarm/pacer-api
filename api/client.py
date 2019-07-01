@@ -1,9 +1,10 @@
 import pprint
-import json
+import base64
 import urllib
 import urllib2
 import json
 import shelve
+__version__ = '1.1'
 '''
 Docket Alarm Python API Client
 
@@ -21,65 +22,88 @@ Example Usage:
 # Global API Setings
 
 api = "/api/v1/"
-DEBUG = True                    # View additional debug information
-TESTING = False                 # Automatically turn on testing for all calls.
+DEBUG = True					# View additional debug information
+TESTING = False					# Automatically turn on testing for all calls.
 _INTERNAL_TESTING = False		# Used internally
+USE_LOCAL = False				# For internal development purposes only
 
 # Helpful for command line interaction
-PRESS_KEY_BEFORE_CALL = False   # Wait for input before making url fetch
-PRESS_KEY_AFTER_CALL = False    # Wait for input before going to the next step
+PRESS_KEY_BEFORE_CALL = False	# Wait for input before making url fetch
+PRESS_KEY_AFTER_CALL = False	# Wait for input before going to the next step
 
-USE_LOCAL = False				 # For internal development purposes only
+SEARCH_RESULTS_AT_ONCE = 50		# Results per call when searching in parallel.
+TIMEOUT = 120
 
 ################################################################################
 # The Main API call
 def call(call, method="GET", **kwargs):
-    if method not in ["GET", "POST"]:
-        raise Exception("Expecting a GET or POST request, not: %s"%method)
-    
-    
-    if PRESS_KEY_BEFORE_CALL:
-        raw_input("(press enter to continue)")
-    
-    # Prepare the URL and arguments
-    if USE_LOCAL:
-        base_url = "http://localhost:8080"
-    else:
-        base_url = "https://www.docketalarm.com"
-    url = base_url + api + call + "/"
-    if TESTING:
-        urlargs['test'] = True
-    urlargs = urllib.urlencode(kwargs, doseq=True)
-    if method == "GET":
-        url = url + "?" + urlargs
-    
-    # Allow for debug printing
-    if DEBUG:
-        print("%s: %s"%(method, url))
-        if method == "POST":
-            print("ARGUMENTS: %s"%pprint.pformat(urlargs))
-        
-    # Make the call
+	if method not in ["GET", "POST"]:
+		raise Exception("Expecting a GET or POST request, not: %s"%method)
+
+
+	if PRESS_KEY_BEFORE_CALL:
+		raw_input("(press enter to continue)")
+
+	# Prepare the URL and arguments
+	if USE_LOCAL:
+		base_url = "http://localhost:8080"
+	else:
+		base_url = "https://www.docketalarm.com"
+	url = base_url + api + call + "/"
+	if TESTING:
+		urlargs['test'] = True
+
+	username, password = None, None
+	if call not in ['login', 'subaccount']:
+		if 'username' in kwargs:
+			username = kwargs['username']
+			del kwargs['username']
+		if 'password' in kwargs:
+			password = kwargs['password']
+			del kwargs['password']
+		if username and password and kwargs.get('login_token'):
+			kwargs['login_token'] = ''
+
+	# Sort the keywords so they are applied consistently.
+	sorted_kw = sorted(kwargs.items(), key = lambda val: val[0])
+	urlargs = urllib.urlencode(sorted_kw, doseq=True)
+
+	if method == "GET":
+		url = url + "?" + urlargs
+
+	# Allow for debug printing
+	if DEBUG:
+		print("%s: %s"%(method, url))
+		if method == "POST":
+			print("ARGUMENTS: %s"%pprint.pformat(urlargs))
+		
+	# Add an authorization header if provided.
+	req = urllib2.Request(url)
+	if username and password:
+		auth = base64.encodestring('%s:%s' % (username, password)).strip()
+		req.add_header("Authorization", "Basic %s" % auth)
+
+	# Make the call
 	if _INTERNAL_TESTING:
 		out = _INTERNAL_TESTING(method, url, urlargs)
+	elif method == "GET":
+		out = urllib2.urlopen(req, timeout = TIMEOUT).read()
 	else:
-		response = urllib.urlopen(url) if method == "GET" else \
-			urllib.urlopen(url, urlargs)
-		out = response.read()
-    
-    try:
-        out = json.loads(out)
-    except:
-        raise Exception("Not JSON: " + out)    
-    
-    if DEBUG and out and out.get('error'):
-        print "Error: %s"%out['error']
-    
-    if PRESS_KEY_AFTER_CALL:
-        raw_input("API Call Complete (press enter to continue)")
-        print("")
-    
-    return out
+		out = urllib2.urlopen(req, urlargs, timeout = TIMEOUT).read()
+
+	try:
+		out = json.loads(out)
+	except:
+		raise Exception("Not JSON: " + out)    
+
+	if DEBUG and out and out.get('error'):
+		print "Error: %s"%out['error']
+
+	if PRESS_KEY_AFTER_CALL:
+		raw_input("API Call Complete (press enter to continue)")
+		print("")
+
+	return out
 
 	
 ################################################################################
@@ -118,9 +142,10 @@ def _dl_worker(username, password, client_matter, cached, dlqueue, docketqueue):
 								court=court, docket=docket,login_token=token,
 								client_matter=client_matter, cached=cached)
 			except Exception as e:
-				logging.error("Problem downloading: %s"%e)
+				logging.error("Problem accessing %s, %s: %s", court, docket, e)
 				token = None
 				tries += 1
+				result = {'success' : False, 'error':str(e)}
 				continue
 			tries += 1
 			if result and not result.get('success'):
@@ -135,7 +160,7 @@ def _dl_worker(username, password, client_matter, cached, dlqueue, docketqueue):
 	
 def getdocket_parallel(username, password, client_matter, docket_list, 
 						cached = False, num_workers = 15,
-						save_progress = None):
+						save_progress = None, async = False):
 	'''
 	Download a list of dockets in parallel by launching many processes.
 	
@@ -143,18 +168,29 @@ def getdocket_parallel(username, password, client_matter, docket_list,
 	num_workers:		How many parallel processes to start
 	cached:				Get cached dockets instead of fresh ones from the court
 	save_progress		Use a temporary file to save work in case we crash.
+	async               If True, we get data asyncrhonously.
 	'''
 	if save_progress != None:
+		if async:
+			raise NotImplementedError("Cannot save progress and async.")
 		save_progress = shelve.open(save_progress, 'c')
 	
 	def get_key(court, docket):
 		return ("(%s),(%s)"%(court, docket)).encode('ascii', 'ignore')
 	
 	dockets = []
-	
+	def deb(msg, *args, **kwargs):
+		msg = "getdocket_parallel %s-%s: %s"%(username, client_matter, msg)
+		logging.info(msg, *args, **kwargs)
+
 	# Put all of the tuples into a processing queue
 	dlqueue = ProcessQueue()
-	for court, docket in docket_list:
+	for c_vals in docket_list:
+		c_vals = list(c_vals)
+		if len(c_vals) < 2:
+			raise Exception("Expecting a list of at least two with court, "
+			                "docket, instead got: %s", c_vals)
+		court, docket = c_vals[:2]
 		k = get_key(court, docket)
 		if save_progress != None and save_progress.get(k) and \
 				save_progress[k]['result']['success']:
@@ -172,45 +208,54 @@ def getdocket_parallel(username, password, client_matter, docket_list,
 	pool = MultiProcessPool(processes=num_workers, initializer=_dl_worker, 
 				initargs=[username, password, client_matter,
 							cached, dlqueue, docketqueue])
-	
-	try:
+
+	def iterator(sleep_time = 1.0):
+		'''An iterator that goes through all of the given dockets.'''
 		# Continue until the processing queue is empty
-		got = 0
+		got, iters, total = 0, 0, len(docket_list)
 		while True:
 			# It takes about 15 seconds to download a docket, so wait that long.
-			time.sleep(1.0)
+			iters += 1
 			try:
+				time.sleep(sleep_time)
 				# get_nowait will have raise Empty and break the loop
 				while True:
-					new_docket = docketqueue.get_nowait()
-					dockets.append(new_docket)	
-					# Only save if succesful
-					if save_progress != None and new_docket['result']['success']:
-						# Save our progress
-						k = get_key(new_docket['court'], new_docket['docket'])
-						save_progress[k] = new_docket
+					yield docketqueue.get_nowait()
 					got += 1
 			except Empty:
-				if save_progress != None:
-					print "Syncing dbase (len=%d), dockets=%d "%(
-						len(save_progress), len(dockets))
-					save_progress.sync()
-				left = len(docket_list) - len(dockets)
+				left = total - got
 				if left <= 0:
+					deb("Finished iterating %s"%total)
 					break
-				logging.info("Got %d, %d total dockets. Waiting again."%(
-						got, len(dockets)))
+				if iters % 5 == 0:
+					deb("Did %d/%d, %d left.", got, total, left)
 				continue
-			except Exception as e:
-				logging.info("Main thread loop exception: %s"%e)
+			except KeyboardInterrupt as e:
+				deb("Main thread interrupt: %s" % e)
 				break
-			
-	except KeyboardInterrupt as e:
-		logging.info("Main thread exception: %s"%e)
+			except Exception as e:
+				deb("Main thread loop exception: %s" % e)
+				break
+
 		dlqueue.close()
 		docketqueue.close()
 		pool.close()
 		pool.terminate()
+
+	if async:
+		return iterator
+
+	for new_i, new_docket in enumerate(iterator()):
+		dockets.append(new_docket)
+		# Only save if succesful
+		if save_progress != None and new_docket['result']['success']:
+			# Save our progress
+			k = get_key(new_docket['court'], new_docket['docket'])
+			save_progress[k] = new_docket
+		elif save_progress != None and new_i % 20 ==0:
+			deb("sync dbase len=%d, added=%d ", len(save_progress), got)
+			save_progress.sync()
+
 		# Return what we have even if there was an exception.
 		
 	if save_progress != None:
@@ -240,8 +285,8 @@ def _search_worker(username, password, client_matter, q, inqueue, searchqueue):
 				if not token or tries % 25 == 0:
 					token = login()
 				result = call(call="search", method="GET", q = q, 
-							offset = offset, limit = limit,
-							login_token=token, client_matter=client_matter)
+							offset = offset, limit = limit, o = 'date_filed',
+							login_token = token, client_matter = client_matter)
 			except Exception as e:
 				logging.error("Could not search at %s, tries - %s: %s"%(
 					offset, tries, e))
@@ -273,6 +318,8 @@ def search_parallel(username, password, client_matter, q,
 					username=username, password=password)['login_token']
 	first_page = call(call="search", method="GET", q=q, 
 		login_token=login_token, client_matter=client_matter)
+	if 'search_results' not in first_page:
+		raise Exception("Could not find search results: %s"%first_page)
 	
 	num_first_page = len(first_page['search_results'])
 	
@@ -285,9 +332,8 @@ def search_parallel(username, password, client_matter, q,
 	
 	# Put all of the search ranges into the result queue
 	dlqueue = ProcessQueue()
-	NUM_AT_ONCE = 20
-	for i in xrange(num_first_page, num_results, NUM_AT_ONCE):
-		limit = min(num_results, i+NUM_AT_ONCE) - i
+	for i in xrange(num_first_page, num_results, SEARCH_RESULTS_AT_ONCE):
+		limit = min(num_results, i+SEARCH_RESULTS_AT_ONCE) - i
 		logging.info("Added: %s --> %s"%(i, i+limit))
 		dlqueue.put((i, limit))
 	
