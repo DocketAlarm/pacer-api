@@ -21,11 +21,11 @@ What you will need:
 import pprint
 import os
 import sys
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import logging
 
-# This if statemetn is only really used internally or if you're using it in a 
+# This if statement is only really used internally or if you're using it in a 
 # django environment. Most likely, you can delete or ignore.
 if not os.environ.get("DJANGO_SETTINGS_MODULE"):
 	ROOT_PATH = os.path.dirname(__file__)
@@ -35,8 +35,8 @@ if not os.environ.get("DJANGO_SETTINGS_MODULE"):
 	os.environ["DJANGO_SETTINGS_MODULE"] = "settings"
 
 # The following two imports are necessary to use the Docket Alarm API
-import api
-import api.client
+#import api
+from api import client as api_client
 
 # Turn on logging
 logging.basicConfig(
@@ -51,17 +51,16 @@ username, password = None, None
 ##################################
 # API Client Options
 # Set to True to just test. This will return fake data, but costs nothing.
-api.client.TESTING = False
+api_client.TESTING = False
 # Wait for input before making url fetch
-api.client.PRESS_KEY_BEFORE_CALL = True
+api_client.PRESS_KEY_BEFORE_CALL = True
 # Wait for input before going to the next step
-api.client.PRESS_KEY_AFTER_CALL = True
+api_client.PRESS_KEY_AFTER_CALL = True
 
 # Development Flag, do not use
-api.client.USE_LOCAL = False
+api_client.USE_LOCAL = False
 
-def call_api(call, msg=None, get_args=None, post_args=None, 
-                        error_expected=False):
+def call_api(call, msg=None, get_args=None, post_args=None, error_expected=False):
     if msg:
         print("")
         print(msg)
@@ -75,7 +74,7 @@ def call_api(call, msg=None, get_args=None, post_args=None,
         method="GET"
         args = get_args
     
-    out = api.client.call(call=call, method=method, **args)
+    out = api_client.call(call=call, method=method, **args)
     
     print("\nAPI Results:")
     pprint.pprint(out)
@@ -94,15 +93,15 @@ part_no = 1
 def print_title(msg):
     global part_no
     print("\n\n---------------------------------")
-    print("Part %d: %s"%(part_no, msg))
+    print(("Part %d: %s"%(part_no, msg)))
     part_no += 1
 
 if __name__ == "__main__":
     print(msg)
     if not username or password:
         print("Enter your Docket Alarm username (your email) and password.")
-        username = raw_input("Username: ")
-        password = raw_input("Password: ")
+        username = input("Username: ")
+        password = input("Password: ")
         
     do_getdocket, do_search, do_track_test = True, True, False
     # do_getdocket, do_search, do_track_test = False, False, True
@@ -119,27 +118,22 @@ if __name__ == "__main__":
     # ########
     if do_search:
         print_title("Searching for Cases")
-        out = call_api("searchpacer", msg=
-                "Now we'll search PACER for all cases in New York where Sony is a party.",
+        out = call_api("searchpacer", msg= "Now we'll search PACER for all cases in New York where Sony is a party.",
                 get_args = {'login_token': login_token, "client_matter":'',
                         'party_name':"Sony", 'court_region' : "New York"})
-        out = call_api("searchpacer", msg=
-            "There were several pages returned in the previous call. Get the fourth.",
+        out = call_api("searchpacer", msg= "There were several pages returned in the previous call. Get the fourth.",
                 get_args =  {'login_token': login_token, "client_matter":'',
                 'party_name':"Sony", 'court_region' : "New York", 'page':4})
         
-        out = call_api("searchpacer", msg=
-            "Search PACER for all Sony cases with nature of suit codes 810 or 220.",
+        out = call_api("searchpacer", msg= "Search PACER for all Sony cases with nature of suit codes 810 or 220.",
                     get_args={'login_token': login_token, "client_matter":'',
                             'party_name':"Sony", 'nature_of_suit' : [810, 220]})
 
-        out = call_api("searchpacer", msg=
-            "Search for docket number 2010-cr-00188 in any court.",
+        out = call_api("searchpacer", msg= "Search for docket number 2010-cr-00188 in any court.",
                     get_args={'login_token': login_token, "client_matter":'',
                             'docket_num':"2010-cr-00188"})
 
-        out = call_api("searchpacer", msg=
-            "Now search for a docket number in a bad format (20-ab-00188).",
+        out = call_api("searchpacer", msg= "Now search for a docket number in a bad format (20-ab-00188).",
                     get_args={'login_token': login_token, "client_matter":'',
                         'docket_num':"20-ab-00188"}, error_expected=True)
 
@@ -207,6 +201,6 @@ if __name__ == "__main__":
     if False:
         print_title("Getting a Document")
         out = call_api("getdocket", post_args = 
-            {'login_token': login_token, "client_matter":'test ' + api,
+            {'login_token': login_token, "client_matter":'test ' + 'api',
             'page_token':out['pages'][2]['page_token']})
     
