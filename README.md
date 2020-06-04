@@ -7,7 +7,7 @@ access to all legal filings in Docket Alarm's database across the
 United States.
 
 ## Docket Alarm's Court Coverage
-As of May 2017, Docket Alarm covers the following jurisdictions:
+As of June 2020, Docket Alarm over 400M legal dockets and documents covering the following jurisdictions:
 
 * Federal Courts / PACER cases (District Courts, Bankruptcies, Appellate, MDL)
 * U.S. Supreme Court
@@ -15,8 +15,9 @@ As of May 2017, Docket Alarm covers the following jurisdictions:
 * The Patent Trial and Appeal Board (PTAB)
 * The Trademark Trial and Appeal Board (TTAB)
 * Trademark Prosecution History at the USPTO
+* Patent Prosecution Histories with underlying documents (PAIR)
 * Orange Book Filings and Related Correspondence with the FDA
-* State courts including California, Texas, Florida and New York.
+* Many state courts across the country, including California, Texas, Florida and New York. More are added each month, so contact for inquiries.
 
 A complete list of [courts is maintained on the Docket Alarm 
 website](https://www.docketalarm.com/courts). If a court you are looking for
