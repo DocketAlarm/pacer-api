@@ -53,6 +53,10 @@ You will need a functioning Docket Alarm account. If you do not have one,
 [you can sign up at Docket Alarm](https://www.docketalarm.com) and enter a 
 user name and password. You will need to enter your credit card information.
 
+### Optional (Jupyter Notebook)
+If you would prefer to use a Jupyter notebook to interact with the API, [see our 
+sample notebook](https://colab.research.google.com/drive/1dXqagTMcfTnmseHeanng23v5_ED4R2kF).
+
 ### Downloading Source and Running the Test Program
 Run the following commands to download the python client API and run the API
 test program:
